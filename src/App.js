@@ -12,9 +12,8 @@ import {
 function getInitOptions() {
   const search = document.location.search || "";
   const text =
-    decodeURIComponent(search.match(/[?&]text=([^&]+)/)?.[1]) ||
-    "http://www.wesingapp.com";
-  return { text };
+    search.match(/[?&]text=([^&]+)/)?.[1] || "http://www.wesingapp.com";
+  return { text: decodeURIComponent(text) };
 }
 
 function Input({ value, onChange }) {
@@ -24,9 +23,9 @@ function Input({ value, onChange }) {
 
   useEffect(() => {
     if (spanRef.current && inputRef.current) {
-      inputRef.current.style.width = `${spanRef.current.offsetWidth}px`
+      inputRef.current.style.width = `${spanRef.current.offsetWidth}px`;
     }
-  }, [value])
+  }, [value]);
 
   const onChangeFn = useCallback((e) => {
     console.log("val::", e.target.value);
@@ -65,27 +64,58 @@ function Input({ value, onChange }) {
 function App() {
   const options = useMemo(getInitOptions, []);
   const [text, setText] = useState(options.text);
+  const [showUsage, setShowUsage] = useState(false);
   const canvasRef = useRef();
+
   useEffect(() => {
-    if (!text) return
+    if (!text) return;
     console.log("canvasRef.current", canvasRef.current);
     QRCode.toCanvas(
       canvasRef.current,
       text,
       { margin: 2, scale: 8 },
       function (error) {
-        if (error) console.error(error);
+        if (error) {
+          console.error("err:", error);
+          alert("Error: " + (error.message || "unknown render error"));
+          return;
+        }
         console.log("success!");
       }
     );
   }, [text]);
 
   return (
-    <div className="App">
+    <div
+      className="App"
+      onClick={() => {
+        if (showUsage) setShowUsage(false);
+      }}
+    >
       <header className="App-header">
         <canvas ref={canvasRef}></canvas>
         <Input value={text} onChange={setText} />
       </header>
+      <div className="usage-block">
+        {showUsage && (
+          <div className="usage-modal" onClick={() => setShowUsage(false)}>
+            <div className="usage-modal-body">
+              <p className="question">
+                How to set initial QRCode value on page load?
+              </p>
+              <p className="answer">
+                Append `text` params to url, eg:{" "}
+                <span style={{ borderBottom: "1px dashed #9c9c9c" }}>
+                  {document.location.pathname + '?text="hello world"'}
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
+        <div className="usage-btn" onClick={() => setShowUsage(true)}>
+          Usage
+        </div>
+      </div>
       <footer> Copyright © 2020 - {new Date().getFullYear()} Chuyik</footer>
     </div>
   );
